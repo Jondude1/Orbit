@@ -59,4 +59,6 @@ object Settings {
     fun putLong(key: String, value: Long) = prefs.edit().putLong(key, value).apply()
     fun getBool(key: String, def: Boolean = false): Boolean = prefs.getBoolean(key, def)
     fun putBool(key: String, value: Boolean) = prefs.edit().putBoolean(key, value).apply()
+    fun getString(key: String, def: String = ""): String = prefs.getString(key, def) ?: def
+    fun putString(key: String, value: String) = prefs.edit().putString(key, value).apply()
 }

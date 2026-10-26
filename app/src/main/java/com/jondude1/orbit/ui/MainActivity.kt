@@ -130,6 +130,12 @@ fun OrbitShell(requestedDest: String?, consumeDest: () -> Unit) {
         }
     }
 
+    val openSettings: () -> Unit = {
+        openId = null
+        librarySelection = null
+        go(Dest.SETTINGS)
+    }
+
     val content: @Composable (Modifier) -> Unit = { m ->
         Column(m) {
             UpdateBanner()
@@ -150,6 +156,7 @@ fun OrbitShell(requestedDest: String?, consumeDest: () -> Unit) {
         }
     }
 
+    androidx.compose.runtime.CompositionLocalProvider(LocalOpenSettings provides openSettings) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         containerColor = MaterialTheme.colorScheme.background,
@@ -197,4 +204,5 @@ fun OrbitShell(requestedDest: String?, consumeDest: () -> Unit) {
     }
 
     openId?.let { id -> ThoughtEditorDialog(id) { openId = null } }
+    }
 }

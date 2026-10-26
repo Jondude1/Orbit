@@ -35,6 +35,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import com.jondude1.orbit.builder.AiProvider
+import com.jondude1.orbit.builder.BuildSetup
+import com.jondude1.orbit.builder.RepoMaker
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.jondude1.orbit.BuildConfig
 import com.jondude1.orbit.data.Orbit
 import com.jondude1.orbit.data.Settings
@@ -184,6 +200,8 @@ fun SettingsScreen() {
                 }
             }
 
+            BuildSettingsPanel()
+
             Panel {
                 Column {
                     SectionLabel("Backup")
@@ -241,4 +259,120 @@ private fun Tip(title: String, body: String) {
         Text(title, style = MaterialTheme.typography.titleSmall)
         Text(body, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun BuildSettingsPanel() {
+    val cfg by BuildSetup.state.collectAsState()
+    val scope = rememberCoroutineScope()
+    var ghStatus by remember { mutableStateOf<String?>(null) }
+
+    Panel {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            SectionLabel("Build")
+            Text(
+                "Lets an idea become a spec and a GitHub repo with a self-updating starter app. Keys stay on this device.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text("Who writes the spec", style = MaterialTheme.typography.titleMedium)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AiProvider.entries.forEach { p ->
+                    FilterChip(
+                        selected = cfg.provider == p,
+                        onClick = { BuildSetup.update { it.copy(provider = p) } },
+                        label = { Text(p.label) },
+                    )
+                }
+            }
+            when (cfg.provider) {
+                AiProvider.CLAUDE -> {
+                    SecretField("Claude API key", cfg.claudeKey) { v -> BuildSetup.update { it.copy(claudeKey = v) } }
+                    OutlinedTextField(
+                        value = cfg.claudeModel,
+                        onValueChange = { v -> BuildSetup.update { it.copy(claudeModel = v) } },
+                        label = { Text("Model") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        "Get a key at console.anthropic.com → API keys.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                AiProvider.LOCAL -> {
+                    OutlinedTextField(
+                        value = cfg.localUrl,
+                        onValueChange = { v -> BuildSetup.update { it.copy(localUrl = v) } },
+                        label = { Text("Server address") },
+                        placeholder = { Text("http://192.168.1.50:11434") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = cfg.localModel,
+                        onValueChange = { v -> BuildSetup.update { it.copy(localModel = v) } },
+                        label = { Text("Model name") },
+                        placeholder = { Text("e.g. qwen2.5:14b") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        "Any OpenAI-compatible server works: Ollama, LM Studio, llama.cpp.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(4.dp))
+            Text("GitHub", style = MaterialTheme.typography.titleMedium)
+            SecretField("GitHub token", cfg.githubToken) { v ->
+                ghStatus = null
+                BuildSetup.update { it.copy(githubToken = v) }
+            }
+            Text(
+                "github.com → Settings → Developer settings → Personal access tokens → Tokens (classic). Tick the \"repo\" and \"workflow\" scopes.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedButton(
+                    enabled = cfg.githubReady,
+                    onClick = {
+                        ghStatus = "Checking…"
+                        scope.launch {
+                            ghStatus = try {
+                                "Connected as " + withContext(Dispatchers.IO) { RepoMaker.whoAmI() }
+                            } catch (e: Exception) {
+                                "Didn't work: ${e.message}"
+                            }
+                        }
+                    },
+                ) { Text("Check token") }
+                Spacer(Modifier.width(12.dp))
+                ghStatus?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SecretField(label: String, value: String, onChange: (String) -> Unit) {
+    var show by remember { mutableStateOf(false) }
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        label = { Text(label) },
+        singleLine = true,
+        visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
+        trailingIcon = {
+            TextButton(onClick = { show = !show }) { Text(if (show) "Hide" else "Show") }
+        },
+        modifier = Modifier.fillMaxWidth(),
+    )
 }

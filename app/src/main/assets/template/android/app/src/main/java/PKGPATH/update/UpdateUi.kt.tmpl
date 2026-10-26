@@ -1,0 +1,94 @@
+package __PKG__.update
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import __PKG__.BuildConfig
+import kotlin.math.roundToInt
+
+/** "Update available — Update / Later" bar. Keep it at the top of the app. */
+@Composable
+fun UpdateBanner() {
+    val state by Updater.state.collectAsState()
+    val dismissed by Updater.dismissedTag.collectAsState()
+    val context = LocalContext.current
+    val s = state
+    val show = (s is UpdateState.Available && s.release.tag != dismissed) || s is UpdateState.Downloading
+    if (!show) return
+    Surface(color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val label = when (s) {
+                    is UpdateState.Downloading -> "Downloading ${s.release.tag}…"
+                    is UpdateState.Available -> "Update available — ${s.release.tag}"
+                    else -> ""
+                }
+                Text(label, color = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.weight(1f))
+                if (s is UpdateState.Available) {
+                    TextButton(onClick = { Updater.later(s.release.tag) }) { Text("Later") }
+                    Button(onClick = { Updater.downloadAndInstall(context, s.release) }) { Text("Update") }
+                }
+            }
+            if (s is UpdateState.Downloading) {
+                Spacer(Modifier.height(8.dp))
+                LinearProgressIndicator(progress = { s.progress }, modifier = Modifier.fillMaxWidth())
+            }
+        }
+    }
+}
+
+/** Installed version + "Check for updates". Belongs in the app's Settings. */
+@Composable
+fun UpdateCard() {
+    val u by Updater.state.collectAsState()
+    val context = LocalContext.current
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Text("Version ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.titleMedium)
+            val s = u
+            Text(
+                when (s) {
+                    UpdateState.Idle -> "Checks for new versions automatically."
+                    UpdateState.Checking -> "Checking…"
+                    UpdateState.UpToDate -> "You're on the latest version."
+                    is UpdateState.Available -> "${s.release.tag} is ready to install."
+                    is UpdateState.Downloading -> "Downloading ${(s.progress * 100).roundToInt()}%…"
+                    is UpdateState.Error -> "Couldn't check: ${s.message}"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(12.dp))
+            if (s is UpdateState.Available) {
+                Button(onClick = { Updater.downloadAndInstall(context, s.release) }) { Text("Install ${s.release.tag}") }
+            } else {
+                OutlinedButton(
+                    onClick = { Updater.check() },
+                    enabled = s !is UpdateState.Checking && s !is UpdateState.Downloading,
+                ) { Text("Check for updates") }
+            }
+        }
+    }
+}

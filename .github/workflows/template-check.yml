@@ -1,0 +1,57 @@
+name: Check starter template
+
+# Builds the Android starter that Orbit's "Build" feature pushes to new repos,
+# so a broken template is caught here instead of in a brand new app.
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "app/src/main/assets/template/**"
+      - ".github/workflows/template-check.yml"
+  workflow_dispatch:
+
+jobs:
+  template:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Render template like Orbit does
+        run: |
+          src=app/src/main/assets/template/android
+          out=$RUNNER_TEMP/starter
+          mkdir -p "$out"
+          (cd "$src" && find . -type f) | while read -r f; do
+            rel=$(echo "${f#./}" | sed -e 's#\(^\|/\)dot\.#\1.#g' -e 's#\.tmpl$##' -e 's#PKGPATH#com/jondude1/templatecheck#')
+            mkdir -p "$out/$(dirname "$rel")"
+            sed -e 's#__APP_NAME_KT__#Template \\"Check\\" \\$1#g' \
+                -e 's#__APP_NAME_XML__#Template \\"Check\\" \&amp; co#g' \
+                -e 's#__SUMMARY_KT__#A one-liner with \\"quotes\\" and \\$dollars.#g' \
+                -e 's#__APP_FILE__#TemplateCheck#g' \
+                -e 's#__OWNER__#Jondude1#g' \
+                -e 's#__REPO__#Jondude1/TemplateCheck#g' \
+                -e 's#__PKG__#com.jondude1.templatecheck#g' \
+                "$src/$f" > "$out/$rel"
+          done
+          if grep -rn "__[A-Z_]*__" "$out"; then echo "Unfilled placeholder"; exit 1; fi
+          find "$out" -type f | sort
+
+      - name: Make a throwaway signing key
+        run: |
+          mkdir -p $RUNNER_TEMP/starter/keystore
+          keytool -genkeypair -keystore $RUNNER_TEMP/starter/keystore/release.jks -storetype JKS -alias release \
+            -keyalg RSA -keysize 2048 -validity 36500 \
+            -storepass android-release -keypass android-release -dname "CN=TemplateCheck, O=Jondude1"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Build the starter
+        working-directory: ${{ runner.temp }}/starter
+        run: gradle assembleRelease --stacktrace

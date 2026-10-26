@@ -1,0 +1,58 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # One permanent signing key, made on the very first build and committed.
+      # Installed copies can only update if every build is signed with it.
+      - name: Create signing key (first build only)
+        run: |
+          if [ ! -f keystore/release.jks ]; then
+            mkdir -p keystore
+            keytool -genkeypair -keystore keystore/release.jks -storetype JKS -alias release \
+              -keyalg RSA -keysize 2048 -validity 36500 \
+              -storepass android-release -keypass android-release \
+              -dname "CN=__APP_FILE__, O=__OWNER__"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add keystore/release.jks
+            git commit -m "Add permanent signing key [skip ci]"
+            git push
+          fi
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Build release APK
+        run: gradle assembleRelease --stacktrace
+
+      - name: Rename APK
+        run: |
+          mkdir -p out
+          cp app/build/outputs/apk/release/app-release.apk out/__APP_FILE__-v1.0.${{ github.run_number }}.apk
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: __APP_FILE__ v1.0.${{ github.run_number }}
+          body: ${{ github.event.head_commit.message }}
+          files: out/*.apk
+          make_latest: true

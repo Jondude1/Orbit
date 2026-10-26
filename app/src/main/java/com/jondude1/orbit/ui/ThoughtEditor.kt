@@ -40,6 +40,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.jondude1.orbit.data.Kind
 import com.jondude1.orbit.data.Orbit
 import com.jondude1.orbit.data.Status
 import com.jondude1.orbit.data.ThoughtStore
@@ -148,6 +149,10 @@ fun ThoughtEditor(id: Long, modifier: Modifier = Modifier, onClose: (() -> Unit)
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
+        if (t.kind == Kind.APP || t.kind == Kind.PROJECT || t.spec.isNotBlank() || t.repoUrl.isNotBlank()) {
+            Spacer(Modifier.height(20.dp))
+            BuildPanel(t, LocalOpenSettings.current)
+        }
         Spacer(Modifier.height(24.dp))
     }
 

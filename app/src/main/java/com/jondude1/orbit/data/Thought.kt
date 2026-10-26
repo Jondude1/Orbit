@@ -46,6 +46,10 @@ data class Thought(
     val intervalDays: Int = 1,
     val surfacedCount: Int = 0,
     val lastSurfacedAt: Long = 0L,
+    /** AI-written one-page spec (markdown), made from the Build panel. */
+    val spec: String = "",
+    /** GitHub repo created for this idea, if any. */
+    val repoUrl: String = "",
 ) {
     val title: String
         get() = text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
@@ -75,6 +79,8 @@ data class Thought(
         put("intervalDays", intervalDays)
         put("surfacedCount", surfacedCount)
         put("lastSurfacedAt", lastSurfacedAt)
+        put("spec", spec)
+        put("repoUrl", repoUrl)
     }
 
     companion object {
@@ -99,6 +105,8 @@ data class Thought(
                 intervalDays = o.optInt("intervalDays", 1),
                 surfacedCount = o.optInt("surfacedCount", 0),
                 lastSurfacedAt = o.optLong("lastSurfacedAt", 0L),
+                spec = o.optString("spec"),
+                repoUrl = o.optString("repoUrl"),
             )
         }
     }
