@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="capture"
+        android:enabled="true"
+        android:icon="@drawable/ic_orbit"
+        android:shortcutShortLabel="@string/shortcut_capture">
+        <intent
+            android:action="com.jondude1.orbit.CAPTURE"
+            android:targetPackage="com.jondude1.orbit"
+            android:targetClass="com.jondude1.orbit.ui.QuickCaptureActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="voice"
+        android:enabled="true"
+        android:icon="@drawable/ic_orbit"
+        android:shortcutShortLabel="@string/shortcut_voice">
+        <intent
+            android:action="com.jondude1.orbit.CAPTURE"
+            android:targetPackage="com.jondude1.orbit"
+            android:targetClass="com.jondude1.orbit.ui.QuickCaptureActivity">
+            <extra android:name="voice" android:value="true" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="review"
+        android:enabled="true"
+        android:icon="@drawable/ic_orbit"
+        android:shortcutShortLabel="@string/shortcut_review">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.jondude1.orbit"
+            android:targetClass="com.jondude1.orbit.ui.MainActivity">
+            <extra android:name="dest" android:value="review" />
+        </intent>
+    </shortcut>
+</shortcuts>

@@ -1,0 +1,16 @@
+<resources>
+    <style name="Theme.Orbit" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/orbit_bg</item>
+        <item name="android:statusBarColor">@color/orbit_bg</item>
+        <item name="android:navigationBarColor">@color/orbit_bg</item>
+    </style>
+    <style name="Theme.Orbit.Dialog" parent="android:Theme.Material.Dialog.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:windowMinWidthMajor">90%</item>
+        <item name="android:windowMinWidthMinor">90%</item>
+    </style>
+    <color name="orbit_bg">#0F1220</color>
+    <color name="orbit_accent">#FFB547</color>
+</resources>

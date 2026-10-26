@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Orbit</string>
+    <string name="tile_label">Catch a thought</string>
+    <string name="shortcut_capture">New thought</string>
+    <string name="shortcut_voice">Voice thought</string>
+    <string name="shortcut_review">Review orbit</string>
+</resources>
